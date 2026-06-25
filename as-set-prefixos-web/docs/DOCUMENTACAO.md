@@ -24,7 +24,7 @@ aplicação. Para instalação e execução, veja o [`README.md`](../README.md).
 
 ## Visão geral
 
-A aplicação parte de um **as-set** registrado no RADB (ex: `AS-28173`),
+A aplicação parte de um **as-set** registrado no RADB (ex: `AS-EXEMPLO`),
 expande recursivamente todos os ASNs membros, e para cada um coleta:
 
 1. Os blocos **alocados** a esse ASN segundo o `whois.registro.br`.
@@ -51,7 +51,7 @@ configuração para equipamentos Juniper e Huawei.
 ## Fluxo de dados
 
 ```
-as-set (ex: AS-28173)
+as-set (ex: AS-EXEMPLO)
         │
         ▼
   whois.radb.net  --!i<as-set>,1-->  lista de ASNs membros
@@ -139,9 +139,9 @@ como registro de auditoria completo da coleta.
 
 | Coluna | Descrição |
 |---|---|
-| `asn` | ASN ao qual a entrada pertence (ex: `AS28173`). |
+| `asn` | ASN ao qual a entrada pertence (ex: `AS64500`). |
 | `familia` | `v4` ou `v6`. |
-| `prefixo` | Bloco CIDR (ex: `45.179.120.0/22`). |
+| `prefixo` | Bloco CIDR (ex: `192.0.2.0/24`). |
 | `fonte` | `alocacao` (registro.br) ou `irr` (objeto route/route6). |
 | `fonte_detalhe` | Para `alocacao`, sempre `registro.br`. Para `irr`, o registro de origem do objeto (`RADB`, `ARIN`, `RIPE`, `TC`, etc — campo `source:` do RPSL). |
 | `descr` | Texto livre do campo `descr:` do objeto RPSL (quando existir). |
@@ -186,8 +186,8 @@ ferramenta de filtro/ACL que aceite uma lista simples de CIDRs.
 Comandos de configuração Junos, um por linha, a partir da lista sumarizada:
 
 ```
-set policy-options prefix-list CLIENTES-V4 45.179.120.0/22
-set policy-options prefix-list CLIENTES-V4 209.14.128.0/24
+set policy-options prefix-list CLIENTES-V4 192.0.2.0/24
+set policy-options prefix-list CLIENTES-V4 198.51.100.0/24
 ```
 
 O `<nome>` no nome do arquivo reflete o valor preenchido no campo "nome
@@ -201,8 +201,8 @@ incremental de 5 em 5:
 
 ```
 acl name CLIENTES-V4 advance
- rule 5 permit ip source 45.179.120.0 0.0.3.255
- rule 10 permit ip source 209.14.128.0 0.0.0.255
+ rule 5 permit ip source 192.0.2.0 0.0.0.255
+ rule 10 permit ip source 198.51.100.0 0.0.0.255
 ```
 
 Para IPv4, o prefixo CIDR é convertido para **rede + máscara wildcard**
@@ -211,5 +211,5 @@ Para IPv4, o prefixo CIDR é convertido para **rede + máscara wildcard**
 
 ```
 acl ipv6 name CLIENTES-V6 advance
- rule 5 permit ipv6 source 2804:3154::/32
+ rule 5 permit ipv6 source 2001:db8::/32
 ```

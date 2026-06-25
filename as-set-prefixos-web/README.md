@@ -88,10 +88,16 @@ Depois acesse `http://127.0.0.1:5000` no navegador.
 ├── requirements.txt        # dependências Python (só Flask)
 ├── static/
 │   └── index.html          # interface web (formulário, log, tabelas, downloads)
+├── docs/
+│   └── DOCUMENTACAO.md     # referência completa da interface e dos arquivos gerados
 ├── start_windows.bat
 ├── start_mac_linux.sh
 └── README.md
 ```
+
+Para o detalhamento de cada campo da interface e do formato de cada arquivo
+gerado (CSV, TXT, prefix-list Juniper, ACL Huawei), veja
+[`docs/DOCUMENTACAO.md`](docs/DOCUMENTACAO.md).
 
 ## Rodando de novo depois da primeira vez
 
@@ -124,4 +130,9 @@ já existe e só reinstala dependências se necessário.
 
 Distribuído sob a licença MIT — veja o arquivo `LICENSE`. Use, modifique e
 redistribua livremente, mantendo o aviso de copyright original.
+
+## Histórico de versões
+
+Veja [`CHANGELOG.md`](CHANGELOG.md) para o histórico completo de mudanças.
+
 

@@ -3,6 +3,19 @@
 Todas as mudanças notáveis deste projeto são documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [1.1.1] - 2026-06-25
+### Changed
+- `docs/DOCUMENTACAO.md`: exemplos de ASN e blocos reais substituídos por
+  faixas reservadas para documentação (`192.0.2.0/24`, `198.51.100.0/24` —
+  RFC 5737; `2001:db8::/32` — RFC 3849; `AS64500`/`AS-EXEMPLO` — RFC 5398),
+  sem referência a clientes ou ASNs reais.
+
+## [1.1.0] - 2026-06-25
+### Added
+- `docs/DOCUMENTACAO.md`: referência completa da interface web (cada campo,
+  botão e aba) e do formato/propósito de cada arquivo gerado (CSV, TXT,
+  prefix-list Juniper, ACL Huawei).
+
 ## [1.0.0] - 2026-06-25
 ### Added
 - Scripts de inicialização multiplataforma (`start_windows.bat`, `start_mac_linux.sh`)
