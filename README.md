@@ -1,5 +1,7 @@
 # Registry Console — prefixos por as-set
 
+![Screenshot da interface](docs/screenshot.png)
+
 Coleta prefixos IPv4/IPv6 de todos os ASNs membros de um as-set (RADB),
 cruzando alocação registrada no `whois.registro.br` com objetos
 `route:`/`route6:` do IRR, sumariza, detecta conflitos de origem (MOAS) e
