@@ -88,13 +88,17 @@ Depois acesse `http://127.0.0.1:5000` no navegador.
 
 ```
 .
-├── app.py                  # backend Flask (consultas reais de whois/IRR)
-├── collect_as_set_lib.py   # lógica de coleta, agregação e detecção de conflitos
+├── app.py                  # backend Flask com rotas SSE (/api/collect e /api/collect_asn)
+├── collect_as_set_lib.py   # motor multithread de consultas Whois/IRR, agregação e extração RPSL
 ├── requirements.txt        # dependências Python (só Flask)
 ├── static/
-│   └── index.html          # interface web (formulário, log, tabelas, downloads)
+│   └── index.html          # interface web (modos AS-SET/ASN, terminal, tabelas, visualizador RPSL)
+├── docs/
+│   └── DOCUMENTACAO.md     # documentação técnica de campos, regras e arquivos gerados
+├── CHANGELOG.md            # histórico detalhado de versões e alterações
 ├── start_windows.bat
 ├── start_mac_linux.sh
+├── LICENSE
 └── README.md
 ```
 
