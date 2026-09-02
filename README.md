@@ -9,7 +9,7 @@ Requer conexão com a internet com saída liberada na porta 43/tcp (protocolo wh
 ## Funcionalidades
 
 * **Consulta por AS-SET:** Expande recursivamente os membros no IRR e coleta os prefixos de todos os ASNs associados[cite: 3].
-* **Consulta por ASN específico:** Permite auditar diretamente um ASN avulso (ex: `AS28173` ou `28173`).
+* **Consulta por ASN específico:** Permite auditar diretamente um ASN avulso (ex: `AS65001` ou `65001`).
 * **Multithreading:** Coleta paralela de dados de múltiplos ASNs e verificação concorrente de conflitos MOAS em múltiplos servidores IRR.
 * **Detecção de Conflitos (MOAS) com E-mails de NOC:** Identifica anúncios concorrentes no IRR e extrai endereços de e-mail dos campos `changed:` e `notify:` com links `mailto:` diretos.
 * **Visualização e Download RPSL (Raw):** Extração completa dos objetos `aut-num` e `route:`/`route6:` direto da base IRR em formato de texto (`irr_records.txt`).
