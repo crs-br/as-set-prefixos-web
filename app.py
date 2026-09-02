@@ -1,14 +1,5 @@
 """
-app.py - backend Flask para a interface web de coleta de prefixos por as-set.
-
-Como rodar:
-    pip install -r requirements.txt
-    python3 app.py
-    -> abre automaticamente http://127.0.0.1:5000 no navegador
-
-Requer saida de rede liberada na porta 43/tcp para os servidores IRR e para
-whois.registro.br. As consultas reais acontecem aqui no backend; o frontend
-so conversa com este servidor via HTTP/SSE.
+app.py - backend Flask para a interface web de coleta de prefixos por as-set e por ASN.
 """
 
 import json
@@ -39,13 +30,7 @@ def api_collect():
 
     if not as_set:
         return Response(error_stream("Informe o nome de um as-set (ex: AS-28173)."),
-                         mimetype="text/event-stream")
-
-    try:
-        delay = float(request.args.get("delay", 1.5))
-    except ValueError:
-        delay = 1.5
-    delay = max(0.0, min(delay, 30.0))
+                        mimetype="text/event-stream")
 
     radb_server = (request.args.get("radb_server") or "whois.radb.net").strip() or "whois.radb.net"
     irr_servers_raw = (request.args.get("irr_servers") or radb_server).strip()
@@ -58,11 +43,48 @@ def api_collect():
     def generate():
         try:
             for event in lib.collect_stream(
-                as_set, delay=delay, radb_server=radb_server, irr_servers=irr_servers,
+                as_set, radb_server=radb_server, irr_servers=irr_servers,
                 skip_registrobr=skip_registrobr, skip_irr=skip_irr, check_conflicts=check_conflicts,
             ):
                 yield f"data: {json.dumps(event)}\n\n"
-        except Exception as e:  # nao deixa a stream cair em silencio
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Erro inesperado: {e}'})}\n\n"
+
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.route("/api/collect_asn")
+def api_collect_asn():
+    asn = (request.args.get("asn") or "").strip()
+
+    def error_stream(message):
+        yield f"data: {json.dumps({'type': 'error', 'message': message})}\n\n"
+
+    if not asn:
+        return Response(error_stream("Informe um ASN válido (ex: AS28173 ou 28173)."),
+                        mimetype="text/event-stream")
+
+    irr_servers_raw = (request.args.get("irr_servers") or "whois.radb.net").strip()
+    irr_servers = [s.strip() for s in irr_servers_raw.split(",") if s.strip()] or ["whois.radb.net"]
+
+    skip_registrobr = (request.args.get("skip_registrobr") or "false").lower() == "true"
+    skip_irr = (request.args.get("skip_irr") or "false").lower() == "true"
+    check_conflicts = (request.args.get("check_conflicts") or "true").lower() == "true"
+    fetch_raw_irr = (request.args.get("fetch_raw_irr") or "true").lower() == "true"
+
+    def generate():
+        try:
+            for event in lib.collect_asn_stream(
+                asn, irr_servers=irr_servers,
+                skip_registrobr=skip_registrobr, skip_irr=skip_irr,
+                check_conflicts=check_conflicts, fetch_raw_irr=fetch_raw_irr
+            ):
+                yield f"data: {json.dumps(event)}\n\n"
+        except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': f'Erro inesperado: {e}'})}\n\n"
 
     return Response(
@@ -75,7 +97,7 @@ def api_collect():
 if __name__ == "__main__":
     url = f"http://{HOST}:{PORT}"
     print(f"\n  Servidor rodando em {url}")
-    print("  Abrindo o navegador automaticamente... (se nao abrir, acesse o endereco acima manualmente)")
+    print("  Abrindo o navegador automaticamente...")
     print("  Pressione CTRL+C nesta janela para encerrar.\n")
     threading.Timer(1.2, lambda: webbrowser.open(url)).start()
     app.run(host=HOST, port=PORT, debug=False, use_reloader=False, threaded=True)

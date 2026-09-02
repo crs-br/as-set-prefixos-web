@@ -1,7 +1,7 @@
-# Documentação — Registry Console (prefixos por as-set)
+# Documentação — Registry Console (prefixos por as-set e ASN)
 
 Documentação de referência da interface web e dos arquivos gerados pela
-aplicação. Para instalação e execução, veja o [`README.md`](../README.md).
+aplicação[cite: 11]. Para instalação e execução, veja o [`README.md`](../README.md)[cite: 11].
 
 ## Sumário
 
@@ -13,9 +13,10 @@ aplicação. Para instalação e execução, veja o [`README.md`](../README.md).
   - [2. Log](#2-log)
   - [3. Resultados](#3-resultados)
 - [Arquivos gerados](#arquivos-gerados)
-  - [prefixos.csv (bruto)](#prefixoscsv-bruto)
+  - [prefixos_bruto.csv](#prefixos_brutocsv)
   - [prefixos_resumo.csv](#prefixos_resumocsv)
   - [prefixos_conflitos.csv](#prefixos_conflitoscsv)
+  - [irr_records.txt](#irr_recordstxt)
   - [prefixos_v4.txt / prefixos_v6.txt](#prefixos_v4txt--prefixos_v6txt)
   - [juniper_prefix-list_\<nome\>.txt](#juniper_prefix-list_nometxt)
   - [huawei_acl_\<nome\>.txt](#huawei_acl_nometxt)
@@ -24,29 +25,31 @@ aplicação. Para instalação e execução, veja o [`README.md`](../README.md).
 
 ## Visão geral
 
-A aplicação parte de um **as-set** registrado no RADB (ex: `AS-EXEMPLO`),
-expande recursivamente todos os ASNs membros, e para cada um coleta:
+A aplicação opera em duas modalidades de consulta:
 
-1. Os blocos **alocados** a esse ASN segundo o `whois.registro.br`.
-2. Os blocos **registrados no IRR** (objetos `route:`/`route6:`) com aquele
-   ASN como origem — cobre blocos alugados/anunciados via upstream que não
-   aparecem como alocação direta.
+1. **Por as-set**: Parte de um objeto `as-set` (ex: `AS-EXEMPLO`), expande recursivamente todos os ASNs membros via IRRd, e varre cada um em paralelo via multithreading.
+2. **Por ASN específico**: Consulta diretamente um ASN único informado (ex: `AS64500` ou `64500`), sem exigir um `as-set` prévio.
 
-Em seguida, sumariza o resultado (removendo prefixos redundantes), verifica
-se algum prefixo tem **mais de uma origem registrada no IRR** (conflito de
-origem / MOAS), e permite exportar a lista final em formato de
-configuração para equipamentos Juniper e Huawei.
+Para cada ASN auditado, a ferramenta coleta:
+
+1. Os blocos **alocados** ao ASN segundo o `whois.registro.br`.
+2. Os blocos **registrados no IRR** (objetos `route:`/`route6:`) com aquele ASN como origem — cobrindo blocos alugados ou anunciados via upstream.
+3. Opcionalmente, os registros textuais RPSL completos (`aut-num` e `route:`/`route6:`).
+
+Em seguida, o backend sumariza o resultado (eliminando prefixos redundantes contidos em blocos maiores), dispara uma checagem concorrente de **conflito de origem (MOAS)** extraindo e-mails operacionais dos campos `changed:` e `notify:`, e disponibiliza exportações formatadas para roteadores Juniper e Huawei.
 
 ## Conceitos-chave
 
 | Termo | Significado |
 |---|---|
-| **as-set** | Objeto RPSL no IRR que agrupa um conjunto de ASNs (ex: todos os clientes de um provedor). |
-| **ASN** | Número de Sistema Autônomo — identifica uma rede na internet. |
-| **Alocação (registro.br)** | Bloco IPv4/IPv6 formalmente atribuído a um ASN pelo registro brasileiro (NIC.br). |
-| **IRR** | Internet Routing Registry — bancos de dados (RADB, RIPE, ARIN, etc.) onde redes registram objetos `route:`/`route6:` autorizando um ASN a anunciar um prefixo via BGP. |
-| **Sumarização** | Remoção de prefixos mais específicos que já estão contidos em um bloco maior já presente no resultado (ex: um `/22` alocado torna redundantes `/24`s do IRR contidos nele). |
-| **MOAS** (*Multiple Origin AS*) | O mesmo prefixo exato registrado no IRR com ASNs de origem diferentes — pode indicar multihoming legítimo, configuração desatualizada, ou risco de sequestro de rota (hijack). |
+| **as-set** | Objeto RPSL no IRR que agrupa um conjunto de ASNs (ex: todos os clientes de um trânsito IP). |
+| **ASN** | Número de Sistema Autônomo (*Autonomous System Number*) que identifica uma rede na internet[cite: 11]. |
+| **Alocação (registro.br)** | Bloco IPv4/IPv6 formalmente atribuído a um ASN pelo registro brasileiro (NIC.br)[cite: 11]. |
+| **IRR** | *Internet Routing Registry* — bases públicas (RADB, TC, RIPE, ARIN, etc.) onde redes publicam objetos RPSL que autorizam o anúncio de rotas BGP[cite: 11]. |
+| **RPSL Raw** | Texto puro dos objetos (`aut-num`, `route`, `route6`, `mnt-by`, etc.) cadastrados nas bases de IRR. |
+| **Sumarização** | Remoção de prefixos mais específicos (subnets) que já estão cobertos por um bloco maior no conjunto final[cite: 11]. |
+| **MOAS** (*Multiple Origin AS*) | O mesmo prefixo exato registrado no IRR com ASNs de origem diferentes — pode indicar multihoming legítimo, objetos desatualizados ou risco de sequestro de rota (hijack)[cite: 11]. |
+| **E-mail de Contato (`changed:`)** | Endereço de e-mail declarado no objeto RPSL para contato operacional do mantenedor daquele registro. |
 
 ## Fluxo de dados
 

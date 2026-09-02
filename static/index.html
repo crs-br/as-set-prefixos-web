@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>registry console — prefixos por as-set</title>
+<title>registry console — prefixos e irr</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -41,13 +41,10 @@
     font-family:var(--font-body);
     line-height:1.5;
   }
-  @media (prefers-reduced-motion: reduce){
-    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
-  }
 
-  .wrap{max-width:920px; margin:0 auto; padding:40px 20px 80px;}
+  .wrap{max-width:980px; margin:0 auto; padding:40px 20px 80px;}
 
-  header.hero{margin-bottom:32px;}
+  header.hero{margin-bottom:28px;}
   .eyebrow{
     font-family:var(--font-mono);
     font-size:12px;
@@ -67,7 +64,7 @@
     letter-spacing:-0.01em;
   }
   h1 .slash{color:var(--text-dimmer); margin:0 2px;}
-  p.lede{color:var(--text-dim); max-width:640px; font-size:15px; margin:0;}
+  p.lede{color:var(--text-dim); max-width:700px; font-size:15px; margin:0;}
   p.lede code{font-family:var(--font-mono); background:var(--surface-2); padding:1px 5px; border-radius:4px; font-size:13px;}
 
   .panel{
@@ -90,6 +87,16 @@
   }
   .panel-body{padding:18px 18px 20px;}
 
+  .mode-selector{
+    display:flex; gap:6px; margin-bottom:18px; border-bottom:1px solid var(--border); padding-bottom:14px;
+  }
+  .mode-btn{
+    font-family:var(--font-mono); font-size:13px; font-weight:500;
+    background:transparent; border:1px solid var(--border); color:var(--text-dim);
+    padding:6px 14px; border-radius:4px; cursor:pointer;
+  }
+  .mode-btn.active{background:var(--teal-dim); border-color:var(--teal); color:var(--teal);}
+
   .field-row{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:14px;}
   .field{display:flex; flex-direction:column; gap:6px; flex:1; min-width:180px;}
   .field.grow-2{flex-grow:2;}
@@ -107,11 +114,7 @@
   input::placeholder{color:var(--text-dimmer);}
   input:focus-visible{outline:2px solid var(--teal); outline-offset:1px; border-color:var(--teal);}
 
-  .prompt-prefix{
-    font-family:var(--font-mono);
-    color:var(--teal);
-    font-weight:500;
-  }
+  .prompt-prefix{font-family:var(--font-mono); color:var(--teal); font-weight:500;}
 
   .check-row{display:flex; gap:20px; flex-wrap:wrap; margin-bottom:16px;}
   .check{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--text-dim); font-family:var(--font-mono);}
@@ -143,9 +146,7 @@
     transition:transform .08s ease, background .15s ease;
   }
   button.run:hover{background:#3fe2cc;}
-  button.run:active{transform:translateY(1px);}
   button.run:disabled{background:var(--surface-2); color:var(--text-dimmer); cursor:not-allowed;}
-  button.run:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 
   .progress-track{
     height:3px; background:var(--surface-2); border-radius:2px; overflow:hidden; margin-top:14px;
@@ -159,7 +160,7 @@
     font-size:13px;
     color:#9ad8cf;
     padding:14px 16px;
-    height:220px;
+    height:200px;
     overflow-y:auto;
     white-space:pre-wrap;
     word-break:break-word;
@@ -196,6 +197,20 @@
   tbody tr:hover{background:var(--surface-2);}
   .table-scroll{max-height:420px; overflow:auto;}
 
+  .raw-text-view{
+    font-family:var(--font-mono);
+    font-size:12px;
+    background:#080c10;
+    color:#cbd5e1;
+    padding:16px;
+    margin:0;
+    white-space:pre-wrap;
+    word-break:break-word;
+    display:none;
+    max-height:420px;
+    overflow-y:auto;
+  }
+
   .pill{
     display:inline-flex; align-items:center; gap:5px;
     font-size:11px; padding:3px 8px; border-radius:99px; font-family:var(--font-mono);
@@ -210,19 +225,14 @@
 
   .tab.has-conflicts{color:var(--danger); border-color:var(--danger);}
   .tab.has-conflicts.active{background:var(--danger); border-color:var(--danger); color:#2a0a0c;}
-  .conflict-records{display:flex; flex-direction:column; gap:3px;}
+  .conflict-records{display:flex; flex-direction:column; gap:4px;}
   .conflict-records span{color:var(--text-dim);}
   .conflict-records span b{color:var(--text); font-weight:500;}
+  .conflict-email{color:var(--teal); text-decoration:underline;}
 
   .empty-state{padding:36px 20px; text-align:center; color:var(--text-dimmer); font-family:var(--font-mono); font-size:13px;}
 
   footer{margin-top:28px; color:var(--text-dimmer); font-size:12px; font-family:var(--font-mono);}
-  footer a{color:var(--text-dim);}
-
-  @media (max-width:560px){
-    .field-row{flex-direction:column;}
-    .results-head{flex-direction:column; align-items:flex-start;}
-  }
 </style>
 </head>
 <body>
@@ -230,43 +240,49 @@
 
   <header class="hero">
     <div class="eyebrow">registry console</div>
-    <h1>prefixos<span class="slash">//</span>as-set</h1>
+    <h1>prefixos<span class="slash">//</span>irr & alocações</h1>
     <p class="lede">
-      Expande um as-set no RADB, cruza alocação registrada em
-      <code>whois.registro.br</code> com objetos <code>route:</code>/<code>route6:</code> do IRR
-      e devolve a lista sumarizada — sem prefixos redundantes cobertos por um bloco maior.
+      Consulta prefixos e rotas por <code>as-set</code> ou <code>ASN específico</code> com aceleração multithread,
+      cruzando <code>whois.registro.br</code> e bases de IRR, com sumarização, e-mails de NOC e exportações para Juniper/Huawei.
     </p>
   </header>
 
   <form id="form" class="panel">
-    <div class="panel-head"><span class="tag">01 · parâmetros</span></div>
+    <div class="panel-head"><span class="tag">01 · parâmetros de consulta</span></div>
     <div class="panel-body">
+      
+      <div class="mode-selector">
+        <button type="button" class="mode-btn active" id="btn-mode-asset">por AS-SET</button>
+        <button type="button" class="mode-btn" id="btn-mode-asn">por ASN específico</button>
+      </div>
+
       <div class="field-row">
-        <div class="field grow-2">
+        <div class="field grow-2" id="box-as-set">
           <label for="as_set"><span class="prompt-prefix">$</span> as-set</label>
-          <input type="text" id="as_set" name="as_set" placeholder="AS-28173" autocomplete="off" required>
+          <input type="text" id="as_set" placeholder="ex: AS-28173" autocomplete="off">
         </div>
-        <div class="field">
-          <label for="delay">delay entre consultas (s)</label>
-          <input type="number" id="delay" name="delay" value="1.5" min="0" max="10" step="0.5">
+        <div class="field grow-2" id="box-asn" style="display:none">
+          <label for="asn_target"><span class="prompt-prefix">$</span> ASN específico</label>
+          <input type="text" id="asn_target" placeholder="ex: AS28173 ou 28173" autocomplete="off">
         </div>
       </div>
 
       <div class="check-row">
         <label class="check"><input type="checkbox" id="skip_registrobr"> pular registro.br (só IRR)</label>
         <label class="check"><input type="checkbox" id="skip_irr"> pular IRR (só registro.br)</label>
-        <label class="check"><input type="checkbox" id="check_conflicts" checked> verificar conflitos de origem (MOAS) no IRR</label>
+        <label class="check"><input type="checkbox" id="check_conflicts" checked> verificar conflitos de origem (MOAS)</label>
+        <label class="check" id="lbl-fetch-raw" style="display:none"><input type="checkbox" id="fetch_raw_irr" checked> extrair registros completos RPSL do IRR</label>
       </div>
 
       <details class="adv">
         <summary>opções avançadas — servidores IRR e nomes de prefix-list</summary>
         <div class="field-row">
-          <div class="field">
+          <div class="field" id="box-radb-server">
             <label for="radb_server">servidor para expandir o as-set</label>
             <input type="text" id="radb_server" value="whois.radb.net">
           </div>
           <div class="field grow-2">
-            <label for="irr_servers">servidor(es) para route/route6 (separados por vírgula)</label>
+            <label for="irr_servers">servidor(es) IRR para route/route6 (separados por vírgula)</label>
             <input type="text" id="irr_servers" value="whois.radb.net">
           </div>
         </div>
@@ -298,7 +314,7 @@
   </form>
 
   <div class="panel">
-    <div class="panel-head"><span class="tag">02 · log</span></div>
+    <div class="panel-head"><span class="tag">02 · log de execução</span></div>
     <div class="terminal" id="terminal"><div class="line sys">aguardando execução<span class="cursor"></span></div></div>
   </div>
 
@@ -308,11 +324,13 @@
         <button type="button" class="tab active" data-tab="resumo">resumo</button>
         <button type="button" class="tab" data-tab="bruto">bruto</button>
         <button type="button" class="tab" data-tab="conflitos" id="tab-conflitos">conflitos</button>
+        <button type="button" class="tab" data-tab="raw-irr" id="tab-raw-irr">registros irr (raw)</button>
       </div>
       <div class="downloads">
         <button class="dl" id="dl-csv-resumo" disabled>↓ csv resumo</button>
         <button class="dl" id="dl-csv-bruto" disabled>↓ csv bruto</button>
         <button class="dl" id="dl-csv-conflitos" disabled>↓ csv conflitos</button>
+        <button class="dl" id="dl-raw-irr" disabled>↓ irr_records.txt</button>
         <button class="dl" id="dl-v4" disabled>↓ v4.txt</button>
         <button class="dl" id="dl-v6" disabled>↓ v6.txt</button>
         <button class="dl" id="dl-juniper-v4" disabled>↓ juniper v4 (.txt)</button>
@@ -322,7 +340,7 @@
       </div>
     </div>
     <div class="table-scroll">
-      <div id="empty-state" class="empty-state">nenhum resultado ainda — rode uma coleta acima</div>
+      <div id="empty-state" class="empty-state">nenhum resultado ainda — rode uma consulta acima</div>
       <table id="tbl-resumo" style="display:none">
         <thead><tr><th>asn</th><th>família</th><th>prefixo</th><th>fonte</th></tr></thead>
         <tbody></tbody>
@@ -332,22 +350,36 @@
         <tbody></tbody>
       </table>
       <table id="tbl-conflitos" style="display:none">
-        <thead><tr><th>família</th><th>prefixo</th><th>origens (asn)</th><th>registros irr</th></tr></thead>
+        <thead><tr><th>família</th><th>prefixo</th><th>origens (asn)</th><th>registros irr e contato (changed/notify)</th></tr></thead>
         <tbody></tbody>
       </table>
+      <pre id="raw-irr-view" class="raw-text-view"></pre>
       <div id="conflitos-empty" class="empty-state" style="display:none">nenhum conflito de origem encontrado no IRR para os prefixos coletados</div>
     </div>
   </div>
 
   <footer>
     requer backend (app.py) rodando com saída de rede liberada na porta 43/tcp.
-    consultas reais acontecem no servidor — esta página só exibe o progresso e os resultados.
   </footer>
 
 </div>
 
 <script>
 (function(){
+  let currentMode = 'asset';
+  let lastSummary = [];
+  let lastRaw = [];
+  let lastConflicts = [];
+  let lastRawIrrText = '';
+  let es = null;
+
+  const btnModeAsset = document.getElementById('btn-mode-asset');
+  const btnModeAsn = document.getElementById('btn-mode-asn');
+  const boxAsSet = document.getElementById('box-as-set');
+  const boxAsn = document.getElementById('box-asn');
+  const boxRadbServer = document.getElementById('box-radb-server');
+  const lblFetchRaw = document.getElementById('lbl-fetch-raw');
+  
   const form = document.getElementById('form');
   const runBtn = document.getElementById('run-btn');
   const terminal = document.getElementById('terminal');
@@ -358,13 +390,29 @@
   const tblResumo = document.getElementById('tbl-resumo');
   const tblBruto = document.getElementById('tbl-bruto');
   const tblConflitos = document.getElementById('tbl-conflitos');
+  const rawIrrView = document.getElementById('raw-irr-view');
   const tabConflitos = document.getElementById('tab-conflitos');
   const tabs = document.querySelectorAll('.tab');
 
-  let lastSummary = [];
-  let lastRaw = [];
-  let lastConflicts = [];
-  let es = null;
+  btnModeAsset.addEventListener('click', () => {
+    currentMode = 'asset';
+    btnModeAsset.classList.add('active');
+    btnModeAsn.classList.remove('active');
+    boxAsSet.style.display = 'flex';
+    boxAsn.style.display = 'none';
+    boxRadbServer.style.display = 'flex';
+    lblFetchRaw.style.display = 'none';
+  });
+
+  btnModeAsn.addEventListener('click', () => {
+    currentMode = 'asn';
+    btnModeAsn.classList.add('active');
+    btnModeAsset.classList.remove('active');
+    boxAsSet.style.display = 'none';
+    boxAsn.style.display = 'flex';
+    boxRadbServer.style.display = 'none';
+    lblFetchRaw.style.display = 'flex';
+  });
 
   function logLine(text, cls){
     const cursor = terminal.querySelector('.cursor');
@@ -396,12 +444,13 @@
     tbB.innerHTML = '';
     tbC.innerHTML = '';
 
-    if (lastSummary.length === 0 && lastRaw.length === 0){
+    if (lastSummary.length === 0 && lastRaw.length === 0 && !lastRawIrrText){
       emptyState.style.display = 'block';
       conflitosEmpty.style.display = 'none';
       tblResumo.style.display = 'none';
       tblBruto.style.display = 'none';
       tblConflitos.style.display = 'none';
+      rawIrrView.style.display = 'none';
       return;
     }
     emptyState.style.display = 'none';
@@ -420,11 +469,18 @@
       const tr = document.createElement('tr');
       const origens = g.asns.map(a => `<span class="pill neutral">${a}</span>`).join(' ');
       const registros = `<div class="conflict-records">` +
-        g.records.map(r => `<span><b>${r.asn}</b> · ${r.fonte_detalhe || '-'} · ${r.descr || '-'}</span>`).join('') +
+        g.records.map(r => {
+          const mailLink = r.email && r.email !== '-' 
+            ? ` · <a class="conflict-email" href="mailto:${r.email}">✉ ${r.email}</a>` 
+            : '';
+          return `<span><b>${r.asn}</b> · ${r.fonte_detalhe || '-'} · ${r.descr || '-'}${mailLink}</span>`;
+        }).join('') +
         `</div>`;
       tr.innerHTML = `<td>${g.familia}</td><td>${g.prefixo}</td><td>${origens}</td><td>${registros}</td>`;
       tbC.appendChild(tr);
     });
+
+    rawIrrView.textContent = lastRawIrrText || 'Nenhum registro bruto retornado.';
 
     tabConflitos.textContent = lastConflicts.length ? `conflitos (${lastConflicts.length})` : 'conflitos';
     tabConflitos.classList.toggle('has-conflicts', lastConflicts.length > 0);
@@ -434,6 +490,7 @@
     tblBruto.style.display = active === 'bruto' ? 'table' : 'none';
     tblConflitos.style.display = active === 'conflitos' && lastConflicts.length ? 'table' : 'none';
     conflitosEmpty.style.display = active === 'conflitos' && !lastConflicts.length ? 'block' : 'none';
+    rawIrrView.style.display = active === 'raw-irr' ? 'block' : 'none';
   }
 
   tabs.forEach(tab => {
@@ -468,6 +525,7 @@
       document.getElementById(id).disabled = !enabled;
     });
     document.getElementById('dl-csv-conflitos').disabled = !(enabled && lastConflicts.length > 0);
+    document.getElementById('dl-raw-irr').disabled = !(enabled && !!lastRawIrrText);
   }
 
   function buildJuniperSet(rows, familia, listName){
@@ -512,9 +570,17 @@
   });
   document.getElementById('dl-csv-conflitos').addEventListener('click', () => {
     const flat = lastConflicts.flatMap(g => g.records.map(r => ({
-      familia: g.familia, prefixo: g.prefixo, asn: r.asn, fonte_detalhe: r.fonte_detalhe, descr: r.descr,
+      familia: g.familia,
+      prefixo: g.prefixo,
+      asn: r.asn,
+      email_contato: r.email || '',
+      fonte_detalhe: r.fonte_detalhe,
+      descr: r.descr,
     })));
-    download('prefixos_conflitos.csv', toCSV(flat, ['familia','prefixo','asn','fonte_detalhe','descr']), 'text/csv');
+    download('prefixos_conflitos.csv', toCSV(flat, ['familia','prefixo','asn','email_contato','fonte_detalhe','descr']), 'text/csv');
+  });
+  document.getElementById('dl-raw-irr').addEventListener('click', () => {
+    download('irr_records.txt', lastRawIrrText, 'text/plain');
   });
   document.getElementById('dl-v4').addEventListener('click', () => {
     const v4 = [...new Set(lastSummary.filter(r => r.familia === 'v4').map(r => r.prefixo))];
@@ -545,21 +611,30 @@
     e.preventDefault();
     if (es) { es.close(); es = null; }
 
-    const asSet = document.getElementById('as_set').value.trim();
-    if (!asSet) return;
-
+    let apiUrl = '';
     const params = new URLSearchParams({
-      as_set: asSet,
-      delay: document.getElementById('delay').value || '1.5',
-      radb_server: document.getElementById('radb_server').value || 'whois.radb.net',
       irr_servers: document.getElementById('irr_servers').value || 'whois.radb.net',
       skip_registrobr: document.getElementById('skip_registrobr').checked,
       skip_irr: document.getElementById('skip_irr').checked,
       check_conflicts: document.getElementById('check_conflicts').checked,
     });
 
+    if (currentMode === 'asset') {
+      const asSet = document.getElementById('as_set').value.trim();
+      if (!asSet) return;
+      params.append('as_set', asSet);
+      params.append('radb_server', document.getElementById('radb_server').value || 'whois.radb.net');
+      apiUrl = '/api/collect?' + params.toString();
+    } else {
+      const asn = document.getElementById('asn_target').value.trim();
+      if (!asn) return;
+      params.append('asn', asn);
+      params.append('fetch_raw_irr', document.getElementById('fetch_raw_irr').checked);
+      apiUrl = '/api/collect_asn?' + params.toString();
+    }
+
     resetTerminal();
-    lastSummary = []; lastRaw = []; lastConflicts = [];
+    lastSummary = []; lastRaw = []; lastConflicts = []; lastRawIrrText = '';
     setDownloadsEnabled(false);
     renderTables();
 
@@ -568,7 +643,7 @@
     progressTrack.style.display = 'block';
     progressFill.style.width = '0%';
 
-    es = new EventSource('/api/collect?' + params.toString());
+    es = new EventSource(apiUrl);
 
     es.onmessage = function(ev){
       let data;
@@ -588,10 +663,11 @@
         lastSummary = data.summary_rows || [];
         lastRaw = data.raw_rows || [];
         lastConflicts = data.conflicts || [];
-        logLine(`concluído — ${lastSummary.length} prefixo(s) sumarizado(s), ${lastRaw.length} bruto(s), ${lastConflicts.length} conflito(s) de origem no IRR`);
+        lastRawIrrText = data.raw_irr_text || '';
+        logLine(`concluído — ${lastSummary.length} prefixo(s) sumarizado(s), ${lastRaw.length} bruto(s), ${lastConflicts.length} conflito(s)`);
         progressFill.style.width = '100%';
         renderTables();
-        setDownloadsEnabled(lastSummary.length > 0 || lastRaw.length > 0);
+        setDownloadsEnabled(lastSummary.length > 0 || lastRaw.length > 0 || !!lastRawIrrText);
         finish();
       }
     };

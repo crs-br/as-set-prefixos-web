@@ -1,17 +1,20 @@
-# Registry Console — prefixos por as-set
+# Registry Console — prefixos por as-set e ASN
 
-![Screenshot da interface](docs/screenshot.png)
+Coleta prefixos IPv4/IPv6 via **AS-SET** ou por **ASN específico**, cruzando alocação registrada no `whois.registro.br` com objetos `route:`/`route6:` do IRR. O sistema executa as consultas com aceleração **multithread**, sumariza os blocos sem redundâncias, detecta conflitos de origem (MOAS) capturando e-mails de contato (`changed:`/`notify:`) para acionamento de NOC, extrai registros brutos RPSL e exporta prefix-lists Juniper e ACLs Huawei.
 
-Coleta prefixos IPv4/IPv6 de todos os ASNs membros de um as-set (RADB),
-cruzando alocação registrada no `whois.registro.br` com objetos
-`route:`/`route6:` do IRR, sumariza, detecta conflitos de origem (MOAS) e
-exporta prefix-list Juniper e ACL Huawei.
-
-Requer conexão com a internet com saída liberada na porta 43/tcp (protocolo
-whois) — é assim que o programa fala com `whois.radb.net`, `whois.registro.br`
-e demais servidores IRR.
+Requer conexão com a internet com saída liberada na porta 43/tcp (protocolo whois) — é assim que o programa fala com `whois.radb.net`, `whois.registro.br` e demais servidores IRR.
 
 ---
+
+## Funcionalidades
+
+* **Consulta por AS-SET:** Expande recursivamente os membros no IRR e coleta os prefixos de todos os ASNs associados[cite: 3].
+* **Consulta por ASN específico:** Permite auditar diretamente um ASN avulso (ex: `AS28173` ou `28173`).
+* **Multithreading:** Coleta paralela de dados de múltiplos ASNs e verificação concorrente de conflitos MOAS em múltiplos servidores IRR.
+* **Detecção de Conflitos (MOAS) com E-mails de NOC:** Identifica anúncios concorrentes no IRR e extrai endereços de e-mail dos campos `changed:` e `notify:` com links `mailto:` diretos.
+* **Visualização e Download RPSL (Raw):** Extração completa dos objetos `aut-num` e `route:`/`route6:` direto da base IRR em formato de texto (`irr_records.txt`).
+* **Sumarização Inteligente:** Elimina sub-redes redundantes que já estejam contidas em blocos maiores[cite: 3, 5].
+* **Exportações:** Arquivos planos (`v4.txt`, `v6.txt`), prefix-list Juniper (`.txt`), ACL Huawei (`.txt`) e relatórios em CSV (Resumo, Bruto e Conflitos com e-mail).
 
 ## Instalação via git (alternativa ao zip)
 
@@ -90,16 +93,10 @@ Depois acesse `http://127.0.0.1:5000` no navegador.
 ├── requirements.txt        # dependências Python (só Flask)
 ├── static/
 │   └── index.html          # interface web (formulário, log, tabelas, downloads)
-├── docs/
-│   └── DOCUMENTACAO.md     # referência completa da interface e dos arquivos gerados
 ├── start_windows.bat
 ├── start_mac_linux.sh
 └── README.md
 ```
-
-Para o detalhamento de cada campo da interface e do formato de cada arquivo
-gerado (CSV, TXT, prefix-list Juniper, ACL Huawei), veja
-[`docs/DOCUMENTACAO.md`](docs/DOCUMENTACAO.md).
 
 ## Rodando de novo depois da primeira vez
 
@@ -132,9 +129,4 @@ já existe e só reinstala dependências se necessário.
 
 Distribuído sob a licença MIT — veja o arquivo `LICENSE`. Use, modifique e
 redistribua livremente, mantendo o aviso de copyright original.
-
-## Histórico de versões
-
-Veja [`CHANGELOG.md`](CHANGELOG.md) para o histórico completo de mudanças.
-
 
