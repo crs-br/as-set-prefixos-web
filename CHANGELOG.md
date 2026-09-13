@@ -3,7 +3,7 @@
 Todas as mudanças notáveis deste projeto são documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
-## [2.1.0] - 2026-09-11
+## [2.1.0] - 2026-09-13
 ### Added
 - Opção **"somente listar ASNs membros"** na consulta de `as-set`, permitindo extrair e listar instantaneamente todos os ASNs pertencentes ao grupo sem executar validações demoradas de prefixos e bases de IRR.
 - Nova aba **"asns membros"** na interface web com contador dinâmico e tabela numerada de ASNs.
