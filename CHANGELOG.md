@@ -14,7 +14,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ## [2.0.0] - 2026-09-01
 ### Added
-- Consulta direta por **ASN específico**: nova modalidade no formulário web que dispensa o uso de um `as-set`, aceitando formatos como `AS28173` ou `28173`.
+- Consulta direta por **ASN específico**: nova modalidade no formulário web que dispensa o uso de um `as-set`, aceitando formatos como `AS65001` ou `65001`.
 - Rota de streaming SSE dedicada (`/api/collect_asn` em `app.py`) para processar consultas de ASN único com feedback em tempo real no terminal da interface.
 - Coleta de **contatos para resolução de conflitos (MOAS)**: parser de RPSL em `collect_as_set_lib.py` atualizado com captura por expressão regular de e-mails declarados nos campos `changed:` e `notify:`.
 - Links interativos `mailto:` na coluna de registros da aba "conflitos" da interface web para acionamento direto dos NOCs responsáveis.
