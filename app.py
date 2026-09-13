@@ -29,13 +29,14 @@ def api_collect():
         yield f"data: {json.dumps({'type': 'error', 'message': message})}\n\n"
 
     if not as_set:
-        return Response(error_stream("Informe o nome de um as-set (ex: AS-28173)."),
+        return Response(error_stream("Informe o nome de um as-set (ex: AS-65001)."),
                         mimetype="text/event-stream")
 
     radb_server = (request.args.get("radb_server") or "whois.radb.net").strip() or "whois.radb.net"
     irr_servers_raw = (request.args.get("irr_servers") or radb_server).strip()
     irr_servers = [s.strip() for s in irr_servers_raw.split(",") if s.strip()] or [radb_server]
 
+    asns_only = (request.args.get("asns_only") or "false").lower() == "true"
     skip_registrobr = (request.args.get("skip_registrobr") or "false").lower() == "true"
     skip_irr = (request.args.get("skip_irr") or "false").lower() == "true"
     check_conflicts = (request.args.get("check_conflicts") or "true").lower() == "true"
@@ -44,7 +45,8 @@ def api_collect():
         try:
             for event in lib.collect_stream(
                 as_set, radb_server=radb_server, irr_servers=irr_servers,
-                skip_registrobr=skip_registrobr, skip_irr=skip_irr, check_conflicts=check_conflicts,
+                skip_registrobr=skip_registrobr, skip_irr=skip_irr,
+                check_conflicts=check_conflicts, asns_only=asns_only
             ):
                 yield f"data: {json.dumps(event)}\n\n"
         except Exception as e:
@@ -65,7 +67,7 @@ def api_collect_asn():
         yield f"data: {json.dumps({'type': 'error', 'message': message})}\n\n"
 
     if not asn:
-        return Response(error_stream("Informe um ASN válido (ex: AS28173 ou 28173)."),
+        return Response(error_stream("Informe um ASN válido (ex: AS65001 ou 65001)."),
                         mimetype="text/event-stream")
 
     irr_servers_raw = (request.args.get("irr_servers") or "whois.radb.net").strip()

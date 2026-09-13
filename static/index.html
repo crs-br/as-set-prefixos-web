@@ -259,18 +259,19 @@
       <div class="field-row">
         <div class="field grow-2" id="box-as-set">
           <label for="as_set"><span class="prompt-prefix">$</span> as-set</label>
-          <input type="text" id="as_set" placeholder="ex: AS-28173" autocomplete="off">
+          <input type="text" id="as_set" placeholder="ex: AS-65001" autocomplete="off">
         </div>
         <div class="field grow-2" id="box-asn" style="display:none">
           <label for="asn_target"><span class="prompt-prefix">$</span> ASN específico</label>
-          <input type="text" id="asn_target" placeholder="ex: AS28173 ou 28173" autocomplete="off">
+          <input type="text" id="asn_target" placeholder="ex: AS65001 ou 65001" autocomplete="off">
         </div>
       </div>
 
       <div class="check-row">
-        <label class="check"><input type="checkbox" id="skip_registrobr"> pular registro.br (só IRR)</label>
-        <label class="check"><input type="checkbox" id="skip_irr"> pular IRR (só registro.br)</label>
-        <label class="check"><input type="checkbox" id="check_conflicts" checked> verificar conflitos de origem (MOAS)</label>
+        <label class="check" id="lbl-asns-only"><input type="checkbox" id="asns_only"> somente listar ASNs membros (sem validar prefixos/IRR)</label>
+        <label class="check" id="lbl-skip-registrobr"><input type="checkbox" id="skip_registrobr"> pular registro.br (só IRR)</label>
+        <label class="check" id="lbl-skip-irr"><input type="checkbox" id="skip_irr"> pular IRR (só registro.br)</label>
+        <label class="check" id="lbl-check-conflicts"><input type="checkbox" id="check_conflicts" checked> verificar conflitos de origem (MOAS)</label>
         <label class="check" id="lbl-fetch-raw" style="display:none"><input type="checkbox" id="fetch_raw_irr" checked> extrair registros completos RPSL do IRR</label>
       </div>
 
@@ -324,9 +325,11 @@
         <button type="button" class="tab active" data-tab="resumo">resumo</button>
         <button type="button" class="tab" data-tab="bruto">bruto</button>
         <button type="button" class="tab" data-tab="conflitos" id="tab-conflitos">conflitos</button>
+        <button type="button" class="tab" data-tab="asns" id="tab-asns">asns membros</button>
         <button type="button" class="tab" data-tab="raw-irr" id="tab-raw-irr">registros irr (raw)</button>
       </div>
       <div class="downloads">
+        <button class="dl" id="dl-asns" disabled>↓ asns.txt</button>
         <button class="dl" id="dl-csv-resumo" disabled>↓ csv resumo</button>
         <button class="dl" id="dl-csv-bruto" disabled>↓ csv bruto</button>
         <button class="dl" id="dl-csv-conflitos" disabled>↓ csv conflitos</button>
@@ -353,6 +356,10 @@
         <thead><tr><th>família</th><th>prefixo</th><th>origens (asn)</th><th>registros irr e contato (changed/notify)</th></tr></thead>
         <tbody></tbody>
       </table>
+      <table id="tbl-asns" style="display:none">
+        <thead><tr><th>#</th><th>asn membro</th></tr></thead>
+        <tbody></tbody>
+      </table>
       <pre id="raw-irr-view" class="raw-text-view"></pre>
       <div id="conflitos-empty" class="empty-state" style="display:none">nenhum conflito de origem encontrado no IRR para os prefixos coletados</div>
     </div>
@@ -370,6 +377,7 @@
   let lastSummary = [];
   let lastRaw = [];
   let lastConflicts = [];
+  let lastAsns = [];
   let lastRawIrrText = '';
   let es = null;
 
@@ -379,6 +387,11 @@
   const boxAsn = document.getElementById('box-asn');
   const boxRadbServer = document.getElementById('box-radb-server');
   const lblFetchRaw = document.getElementById('lbl-fetch-raw');
+  const lblAsnsOnly = document.getElementById('lbl-asns-only');
+  const chkAsnsOnly = document.getElementById('asns_only');
+  const chkSkipReg = document.getElementById('skip_registrobr');
+  const chkSkipIrr = document.getElementById('skip_irr');
+  const chkConflicts = document.getElementById('check_conflicts');
   
   const form = document.getElementById('form');
   const runBtn = document.getElementById('run-btn');
@@ -390,9 +403,18 @@
   const tblResumo = document.getElementById('tbl-resumo');
   const tblBruto = document.getElementById('tbl-bruto');
   const tblConflitos = document.getElementById('tbl-conflitos');
+  const tblAsns = document.getElementById('tbl-asns');
   const rawIrrView = document.getElementById('raw-irr-view');
   const tabConflitos = document.getElementById('tab-conflitos');
+  const tabAsns = document.getElementById('tab-asns');
   const tabs = document.querySelectorAll('.tab');
+
+  chkAsnsOnly.addEventListener('change', () => {
+    const disabled = chkAsnsOnly.checked;
+    chkSkipReg.disabled = disabled;
+    chkSkipIrr.disabled = disabled;
+    chkConflicts.disabled = disabled;
+  });
 
   btnModeAsset.addEventListener('click', () => {
     currentMode = 'asset';
@@ -402,6 +424,7 @@
     boxAsn.style.display = 'none';
     boxRadbServer.style.display = 'flex';
     lblFetchRaw.style.display = 'none';
+    lblAsnsOnly.style.display = 'flex';
   });
 
   btnModeAsn.addEventListener('click', () => {
@@ -412,6 +435,7 @@
     boxAsn.style.display = 'flex';
     boxRadbServer.style.display = 'none';
     lblFetchRaw.style.display = 'flex';
+    lblAsnsOnly.style.display = 'none';
   });
 
   function logLine(text, cls){
@@ -440,16 +464,19 @@
     const tbR = tblResumo.querySelector('tbody');
     const tbB = tblBruto.querySelector('tbody');
     const tbC = tblConflitos.querySelector('tbody');
+    const tbA = tblAsns.querySelector('tbody');
     tbR.innerHTML = '';
     tbB.innerHTML = '';
     tbC.innerHTML = '';
+    tbA.innerHTML = '';
 
-    if (lastSummary.length === 0 && lastRaw.length === 0 && !lastRawIrrText){
+    if (lastSummary.length === 0 && lastRaw.length === 0 && lastAsns.length === 0 && !lastRawIrrText){
       emptyState.style.display = 'block';
       conflitosEmpty.style.display = 'none';
       tblResumo.style.display = 'none';
       tblBruto.style.display = 'none';
       tblConflitos.style.display = 'none';
+      tblAsns.style.display = 'none';
       rawIrrView.style.display = 'none';
       return;
     }
@@ -479,16 +506,23 @@
       tr.innerHTML = `<td>${g.familia}</td><td>${g.prefixo}</td><td>${origens}</td><td>${registros}</td>`;
       tbC.appendChild(tr);
     });
+    lastAsns.forEach((asn, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${idx + 1}</td><td><b>${asn}</b></td>`;
+      tbA.appendChild(tr);
+    });
 
     rawIrrView.textContent = lastRawIrrText || 'Nenhum registro bruto retornado.';
 
     tabConflitos.textContent = lastConflicts.length ? `conflitos (${lastConflicts.length})` : 'conflitos';
     tabConflitos.classList.toggle('has-conflicts', lastConflicts.length > 0);
+    tabAsns.textContent = lastAsns.length ? `asns membros (${lastAsns.length})` : 'asns membros';
 
     const active = document.querySelector('.tab.active').dataset.tab;
     tblResumo.style.display = active === 'resumo' ? 'table' : 'none';
     tblBruto.style.display = active === 'bruto' ? 'table' : 'none';
     tblConflitos.style.display = active === 'conflitos' && lastConflicts.length ? 'table' : 'none';
+    tblAsns.style.display = active === 'asns' && lastAsns.length ? 'table' : 'none';
     conflitosEmpty.style.display = active === 'conflitos' && !lastConflicts.length ? 'block' : 'none';
     rawIrrView.style.display = active === 'raw-irr' ? 'block' : 'none';
   }
@@ -520,12 +554,13 @@
     URL.revokeObjectURL(url);
   }
 
-  function setDownloadsEnabled(enabled){
+  function setDownloadsEnabled(hasPrefixes, hasAsns){
     ['dl-csv-resumo','dl-csv-bruto','dl-v4','dl-v6','dl-juniper-v4','dl-juniper-v6','dl-huawei-v4','dl-huawei-v6'].forEach(id => {
-      document.getElementById(id).disabled = !enabled;
+      document.getElementById(id).disabled = !hasPrefixes;
     });
-    document.getElementById('dl-csv-conflitos').disabled = !(enabled && lastConflicts.length > 0);
-    document.getElementById('dl-raw-irr').disabled = !(enabled && !!lastRawIrrText);
+    document.getElementById('dl-asns').disabled = !hasAsns;
+    document.getElementById('dl-csv-conflitos').disabled = !(hasPrefixes && lastConflicts.length > 0);
+    document.getElementById('dl-raw-irr').disabled = !(hasPrefixes && !!lastRawIrrText);
   }
 
   function buildJuniperSet(rows, familia, listName){
@@ -562,6 +597,9 @@
     return lines.join('\n') + '\n';
   }
 
+  document.getElementById('dl-asns').addEventListener('click', () => {
+    download('asns.txt', lastAsns.join('\n') + (lastAsns.length ? '\n' : ''));
+  });
   document.getElementById('dl-csv-resumo').addEventListener('click', () => {
     download('prefixos_resumo.csv', toCSV(lastSummary, ['asn','familia','prefixo','fonte']), 'text/csv');
   });
@@ -624,6 +662,7 @@
       if (!asSet) return;
       params.append('as_set', asSet);
       params.append('radb_server', document.getElementById('radb_server').value || 'whois.radb.net');
+      params.append('asns_only', document.getElementById('asns_only').checked);
       apiUrl = '/api/collect?' + params.toString();
     } else {
       const asn = document.getElementById('asn_target').value.trim();
@@ -634,8 +673,8 @@
     }
 
     resetTerminal();
-    lastSummary = []; lastRaw = []; lastConflicts = []; lastRawIrrText = '';
-    setDownloadsEnabled(false);
+    lastSummary = []; lastRaw = []; lastConflicts = []; lastAsns = []; lastRawIrrText = '';
+    setDownloadsEnabled(false, false);
     renderTables();
 
     runBtn.disabled = true;
@@ -660,14 +699,24 @@
         logLine('erro: ' + data.message, 'err');
         finish();
       } else if (data.type === 'done'){
+        lastAsns = data.asns || [];
         lastSummary = data.summary_rows || [];
         lastRaw = data.raw_rows || [];
         lastConflicts = data.conflicts || [];
         lastRawIrrText = data.raw_irr_text || '';
-        logLine(`concluído — ${lastSummary.length} prefixo(s) sumarizado(s), ${lastRaw.length} bruto(s), ${lastConflicts.length} conflito(s)`);
+
+        if (data.asns_only){
+          logLine(`concluído — ${lastAsns.length} ASN(s) membro(s) listado(s).`);
+          // Foca na aba de ASNs membros automaticamente
+          tabs.forEach(t => t.classList.remove('active'));
+          tabAsns.classList.add('active');
+        } else {
+          logLine(`concluído — ${lastSummary.length} prefixo(s) sumarizado(s), ${lastRaw.length} bruto(s), ${lastConflicts.length} conflito(s)`);
+        }
+
         progressFill.style.width = '100%';
         renderTables();
-        setDownloadsEnabled(lastSummary.length > 0 || lastRaw.length > 0 || !!lastRawIrrText);
+        setDownloadsEnabled(lastSummary.length > 0 || lastRaw.length > 0, lastAsns.length > 0);
         finish();
       }
     };

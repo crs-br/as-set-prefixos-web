@@ -3,12 +3,13 @@ collect_as_set_lib.py - Versão de Alta Performance Multithreaded
 
 Funcionalidades:
   1) Expansão de AS-SET e consulta direta por ASN único.
-  2) Coleta concorrente (multithreading) de blocos alocados no Registro.br
+  2) Modo de listagem rápida: expande apenas os ASNs do AS-SET sem coletar prefixos.
+  3) Coleta concorrente (multithreading) de blocos alocados no Registro.br
      e rotas nos servidores IRR.
-  3) Sumarização inteligente e agregação de prefixos.
-  4) Checagem multithread de conflitos de origem (MOAS).
-  5) Extração do campo de e-mail de contato (changed:/notify:) para contato de NOC.
-  6) Extração de objetos brutos RPSL completos (aut-num, route/route6).
+  4) Sumarização inteligente e agregação de prefixos.
+  5) Checagem multithread de conflitos de origem (MOAS).
+  6) Extração do campo de e-mail de contato (changed:/notify:) para contato de NOC.
+  7) Extração de objetos brutos RPSL completos (aut-num, route/route6).
 """
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -340,6 +341,7 @@ def _process_asn_list_multithreaded(asns_sorted: list, irr_servers: list,
 
     yield {
         "type": "done",
+        "asns": [f"AS{a}" for a in asns_sorted],
         "raw_rows": rows,
         "summary_rows": summary_rows,
         "conflicts": conflicts,
@@ -349,8 +351,9 @@ def _process_asn_list_multithreaded(asns_sorted: list, irr_servers: list,
 
 def collect_stream(as_set: str, delay: float = 0.0, radb_server: str = "whois.radb.net",
                    irr_servers=("whois.radb.net",), skip_registrobr: bool = False,
-                   skip_irr: bool = False, check_conflicts: bool = True):
-    """Executa a coleta do as-set com aceleração multithread."""
+                   skip_irr: bool = False, check_conflicts: bool = True,
+                   asns_only: bool = False):
+    """Executa a coleta do as-set com aceleração multithread ou apenas lista os ASNs membros."""
     yield {"type": "log", "message": f"Expandindo as-set {as_set} em {radb_server} ..."}
     try:
         asns = expand_as_set(as_set, server=radb_server)
@@ -363,8 +366,22 @@ def collect_stream(as_set: str, delay: float = 0.0, radb_server: str = "whois.ra
         return
 
     asns_sorted = sorted(asns)
+    asn_list_str = [f"AS{a}" for a in asns_sorted]
     yield {"type": "log", "message": f"{len(asns_sorted)} ASN(s) encontrado(s): " +
-                                      ", ".join(f"AS{a}" for a in asns_sorted)}
+                                      ", ".join(asn_list_str)}
+
+    # Se a opção de apenas listar ASNs estiver ativada, encerra aqui sem consultar Whois/IRR
+    if asns_only:
+        yield {
+            "type": "done",
+            "asns_only": True,
+            "asns": asn_list_str,
+            "raw_rows": [],
+            "summary_rows": [],
+            "conflicts": [],
+            "raw_irr_text": ""
+        }
+        return
 
     yield from _process_asn_list_multithreaded(
         asns_sorted,
