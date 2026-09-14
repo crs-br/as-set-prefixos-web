@@ -2,7 +2,7 @@
 
 Coleta prefixos IPv4/IPv6 via **AS-SET** ou por **ASN específico**, cruzando alocação registrada no `whois.registro.br` com objetos `route:`/`route6:` do IRR. O sistema executa as consultas com aceleração **multithread**, permite a listagem instantânea apenas dos ASNs membros de um AS-SET sem validação de prefixos, sumariza os blocos sem redundâncias, detecta conflitos de origem (MOAS) capturando e-mails de contato (`changed:`/`notify:`) para acionamento de NOC, extrai registros brutos RPSL e exporta prefix-lists Juniper e ACLs Huawei.
 
-Requer conexão com a internet com saída liberada na porta 43/tcp (protocolo whois) — é assim que o programa fala com `whois.radb.net`, `whois.registro.br` e demais servidores IRR.
+Requer conexão com a internet com saída liberada na porta 43/tcp (protocolo whois) —- é assim que o programa fala com `whois.radb.net`, `whois.registro.br` e demais servidores IRR.
 
 ---
 
